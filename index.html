@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognitive Load Theory Lesson Design Checklist</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold text-gray-900 mb-1">Cognitive Load Theory Lesson Design Checklist</h1>
+  <p class="text-sm text-gray-500 mb-6">Diagnose intrinsic, extraneous, and germane load balance in your instructional design.</p>
+
+  <div id="app"></div>
+
+  <div class="mt-6 flex gap-3">
+    <button onclick="saveData()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition text-sm">Save to localStorage</button>
+    <button onclick="clearData()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-5 rounded-lg transition text-sm">Clear Saved</button>
+  </div>
+
+  <div id="recommendations" class="mt-6 bg-white rounded-xl shadow p-6 hidden">
+    <h2 class="text-lg font-semibold text-gray-800 mb-3">Recommendations</h2>
+    <div id="rec-content" class="space-y-2 text-sm text-gray-700"></div>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [
+  {
+    id: 'intrinsic',
+    label: 'Intrinsic Load',
+    color: 'blue',
+    description: 'Complexity inherent to the subject matter',
+    items: [
+      'Content is broken into appropriately sized chunks based on learner prior knowledge',
+      'Prerequisites are explicitly stated and activated before new concepts',
+      'Element interactivity is managed (complex topics introduced stepwise)',
+      'Worked examples are provided for high element-interactivity tasks',
+      'Schemas are built progressively from simple to complex'
+    ]
+  },
+  {
+    id: 'extraneous',
+    label: 'Extraneous Load',
+    color: 'red',
+    description: 'Unnecessary cognitive burden from poor design',
+    items: [
+      'Redundant information is eliminated (redundancy effect managed)',
+      'Related text and visuals are spatially integrated (split-attention avoided)',
+      'Narration and visuals are synchronized (temporal contiguity)',
+      'Seductive details and decorative elements are removed',
+      'Navigation and interface demands are minimal',
+      'Instructions are clear and unambiguous'
+    ]
+  },
+  {
+    id: 'germane',
+    label: 'Germane Load',
+    color: 'green',
+    description: 'Effort directed toward schema formation',
+    items: [
+      'Variability of practice is included across multiple contexts',
+      'Learners are prompted to self-explain worked examples',
+      'Elaborative interrogation or generative activities are embedded',
+      'Reflection prompts help learners connect new knowledge to existing schemas',
+      'Desirable difficulties (spacing, interleaving) are appropriately used'
+    ]
+  }
+];
+
+const state = {};
+SECTIONS.forEach(s => {
+  state[s.id] = s.items.map(() => ({ checked: false, score: 3 }));
+});
+
+function loadData() {
+  const saved = localStorage.getItem('clt-checklist');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      Object.assign(state, parsed);
+    } catch(e) {}
+  }
+}
+
+function saveData() {
+  localStorage.setItem('clt-checklist', JSON.stringify(state));
+  const btn = document.querySelector('button[onclick="saveData()"]');
+  btn.textContent = 'Saved!';
+  setTimeout(() => { btn.textContent = 'Save to localStorage'; }, 1500);
+}
+
+function clearData() {
+  localStorage.removeItem('clt-checklist');
+  SECTIONS.forEach(s => { state[s.id] = s.items.map(() => ({ checked: false, score: 3 })); });
+  render();
+}
+
+function sectionScore(id) {
+  const items = state[id];
+  const checked = items.filter(i => i.checked);
+  if (checked.length === 0) return 0;
+  return checked.reduce((s, i) => s + i.score, 0) / checked.length;
+}
+
+function colorClass(score, id) {
+  if (id === 'extraneous') {
+    // For extraneous, lower is better
+    if (score === 0) return 'bg-gray-200 text-gray-500';
+    if (score <= 2) return 'bg-green-100 text-green-800';
+    if (score <= 3.5) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
+  }
+  if (score === 0) return 'bg-gray-200 text-gray-500';
+  if (score >= 4) return 'bg-green-100 text-green-800';
+  if (score >= 2.5) return 'bg-yellow-100 text-yellow-800';
+  return 'bg-red-100 text-red-800';
+}
+
+function statusLabel(score, id) {
+  if (score === 0) return 'Not evaluated';
+  if (id === 'extraneous') {
+    if (score <= 2) return 'Low (Good)';
+    if (score <= 3.5) return 'Moderate (Caution)';
+    return 'High (Reduce!)';
+  }
+  if (score >= 4) return 'Strong';
+  if (score >= 2.5) return 'Adequate';
+  return 'Needs work';
+}
+
+function updateRecommendations() {
+  const recs = [];
+  const iScore = sectionScore('intrinsic');
+  const eScore = sectionScore('extraneous');
+  const gScore = sectionScore('germane');
+
+  if (iScore > 0 && iScore < 3) recs.push('Intrinsic load seems high — consider adding more worked examples or breaking content into smaller segments.');
+  if (eScore > 3.5) recs.push('Extraneous load is elevated — audit your materials for split-attention effects, redundancy, and decorative elements.');
+  if (eScore > 0 && eScore <= 2) recs.push('Extraneous load is well managed. Good job eliminating unnecessary cognitive burden.');
+  if (gScore > 0 && gScore < 3) recs.push('Germane load is low — add self-explanation prompts, variability of practice, or reflection activities.');
+  if (gScore >= 4) recs.push('Germane load activities are strong. Learners are likely forming durable schemas.');
+  if (iScore >= 4 && eScore > 0 && eScore <= 2 && gScore >= 4) recs.push('Excellent balance across all three load types. This lesson design is well optimized.');
+  if (recs.length === 0) recs.push('Complete the checklist items to receive tailored recommendations.');
+
+  const recEl = document.getElementById('rec-content');
+  recEl.innerHTML = '';
+  recs.forEach(r => {
+    const p = document.createElement('p');
+    p.className = 'flex gap-2';
+    const dot = document.createElement('span');
+    dot.textContent = '•';
+    dot.className = 'shrink-0 text-blue-500 font-bold';
+    const text = document.createElement('span');
+    text.textContent = r;
+    p.appendChild(dot);
+    p.appendChild(text);
+    recEl.appendChild(p);
+  });
+  document.getElementById('recommendations').classList.remove('hidden');
+}
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  SECTIONS.forEach(section => {
+    const score = sectionScore(section.id);
+    const cc = colorClass(score, section.id);
+    const sl = statusLabel(score, section.id);
+
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl shadow mb-4 overflow-hidden';
+
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between px-5 py-4 border-b border-gray-100';
+    const hLeft = document.createElement('div');
+    const hTitle = document.createElement('h2');
+    hTitle.className = 'text-base font-semibold text-gray-800';
+    hTitle.textContent = section.label;
+    const hDesc = document.createElement('p');
+    hDesc.className = 'text-xs text-gray-500';
+    hDesc.textContent = section.description;
+    hLeft.appendChild(hTitle);
+    hLeft.appendChild(hDesc);
+    const badge = document.createElement('span');
+    badge.className = `text-xs font-semibold px-3 py-1 rounded-full ${cc}`;
+    badge.textContent = sl + (score > 0 ? ` (${score.toFixed(1)})` : '');
+    header.appendChild(hLeft);
+    header.appendChild(badge);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'divide-y divide-gray-50';
+
+    section.items.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = 'flex items-start gap-3 px-5 py-3';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = `cb-${section.id}-${idx}`;
+      cb.checked = state[section.id][idx].checked;
+      cb.className = 'mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 shrink-0';
+      cb.addEventListener('change', () => {
+        state[section.id][idx].checked = cb.checked;
+        slider.disabled = !cb.checked;
+        scoreDisplay.textContent = cb.checked ? state[section.id][idx].score : '—';
+        updateSection(section.id, card, badge);
+        updateRecommendations();
+      });
+
+      const labelWrap = document.createElement('div');
+      labelWrap.className = 'flex-1';
+      const lbl = document.createElement('label');
+      lbl.htmlFor = cb.id;
+      lbl.className = 'text-sm text-gray-700 cursor-pointer';
+      lbl.textContent = item;
+
+      const sliderRow = document.createElement('div');
+      sliderRow.className = 'flex items-center gap-2 mt-1';
+      const sliderLabel = document.createElement('span');
+      sliderLabel.className = 'text-xs text-gray-400';
+      sliderLabel.textContent = '1';
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = 1;
+      slider.max = 5;
+      slider.value = state[section.id][idx].score;
+      slider.disabled = !state[section.id][idx].checked;
+      slider.className = 'flex-1 h-2 accent-blue-600';
+      slider.addEventListener('input', () => {
+        state[section.id][idx].score = parseInt(slider.value);
+        scoreDisplay.textContent = slider.value;
+        updateSection(section.id, card, badge);
+        updateRecommendations();
+      });
+      const sliderLabel2 = document.createElement('span');
+      sliderLabel2.className = 'text-xs text-gray-400';
+      sliderLabel2.textContent = '5';
+      const scoreDisplay = document.createElement('span');
+      scoreDisplay.className = 'text-xs font-bold text-blue-600 w-5 text-center';
+      scoreDisplay.textContent = state[section.id][idx].checked ? state[section.id][idx].score : '—';
+
+      sliderRow.appendChild(sliderLabel);
+      sliderRow.appendChild(slider);
+      sliderRow.appendChild(sliderLabel2);
+      sliderRow.appendChild(scoreDisplay);
+      labelWrap.appendChild(lbl);
+      labelWrap.appendChild(sliderRow);
+      row.appendChild(cb);
+      row.appendChild(labelWrap);
+      body.appendChild(row);
+    });
+
+    card.appendChild(body);
+    app.appendChild(card);
+  });
+  updateRecommendations();
+}
+
+function updateSection(sectionId, card, badge) {
+  const section = SECTIONS.find(s => s.id === sectionId);
+  const score = sectionScore(sectionId);
+  const cc = colorClass(score, sectionId);
+  const sl = statusLabel(score, sectionId);
+  badge.className = `text-xs font-semibold px-3 py-1 rounded-full ${cc}`;
+  badge.textContent = sl + (score > 0 ? ` (${score.toFixed(1)})` : '');
+}
+
+loadData();
+render();
+</script>
+</body>
+</html>

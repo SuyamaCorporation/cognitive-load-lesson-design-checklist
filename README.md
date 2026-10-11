@@ -1,0 +1,3 @@
+# Cognitive Load Theory Lesson Design Checklist
+
+CLT（認知負荷理論）に基づき教材のintrinsic/extraneous/germane負荷バランスを診断するインストラクショナルデザインツール。各項目のチェックボックスとスライダーでスコアを記録し、セクション別の色付きインジケーターとカスタマイズされた改善レコメンデーションを提示する。スコアはlocalStorageに自動保存される。
